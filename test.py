@@ -1,6 +1,6 @@
 # coding=utf-8
 from __future__ import division
-
+import sys
 
 class _const(object):
     "const class"
@@ -73,7 +73,7 @@ class myObject(object):
         return type(self).__name__ + str(self.args)
 
     def __eq__(self, anonther):
-        if type(self) == type(anonther) and self.args == anonther.args:
+        if type(self) == type(anonther) and self.__dict__ == anonther.__dict__:
             return True
         return False
 
@@ -115,10 +115,13 @@ class mParaPoint(myObject):
             self.y = seg.p1.y
             del self.seg
 
-c = mParaPoint(mSegment(mPoint(1, 1), mPoint(1, 1)))
-print dir(c)
-print "-"*79
-print c.__hash__()
-print hash(c)
-print "-"*79
-print c.__dict__
+# c = mParaPoint(mSegment(mPoint(1, 1), mPoint(1, 1)))
+# print dir(c)
+# print "-"*79
+# print c.__hash__()
+# print hash(c)
+# print "-"*79
+# print c.__dict__
+p1 = mPoint(1.0,2)
+p2 = mPoint(2.0,3)
+print mS
