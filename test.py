@@ -1,7 +1,22 @@
-import sys
-def get_cur_info():
-    print sys._getframe().f_code
-    print sys._getframe().f_back.f_code.co_name
+# coding=utf-8
+from __future__ import division
+
+
+class _const(object):
+    "const class"
+
+    def __setattr__(self, key, value):
+        if key in self.__dict__:
+            raise Warning("Const Error")
+        else:
+            self.__dict__[key] = value
+
+"define const data"
+const = _const()
+
+"type of numbers"
+const.typeNum = [int, float, long]
+
 
 def myFunTest(fun, goal, *args):
     '''report errors if function is failed'''
@@ -46,10 +61,64 @@ def typeTest(typeList, *args):
                                 type(args[i]).__name__, str(args[i])))
 
 
-def a(i):
-    '''docstring for a'''
+class myObject(object):
+    "modified Object"
 
-    typeTest([int], i)
-    return i
+    def __init__(self, *args):
+        pass
 
-myFunTest(a, 2, 1)
+    def __repr__(self):
+        if type(self.args) != tuple:
+            return type(self).__name__ + "(" + str(self.args) + ")"
+        return type(self).__name__ + str(self.args)
+
+    def __eq__(self, anonther):
+        if type(self) == type(anonther) and self.args == anonther.args:
+            return True
+        return False
+
+
+class mSegment(myObject):
+    '''my simple 2d segment'''
+
+    def __init__(self, p1, p2):
+
+        typeTest([mPoint] * 2, p1, p2)
+        self.args = (p1, p2)
+        self.p1 = p1
+        self.p2 = p2
+
+
+class mPoint(myObject):
+    '''my simple 2D point'''
+
+    def __init__(self, x, y):
+
+        typeTest([const.typeNum] * 2, x, y)
+        self.args = (x, y)
+        self.x = x
+        self.y = y
+
+
+class mParaPoint(myObject):
+    '''a parametric 2D point in a segment'''
+
+    def __init__(self, seg):
+
+        typeTest([mSegment], seg)
+        self.args = (seg)
+        self.seg = seg
+        if seg.p1 == seg.p2:
+            self.__class__ = mPoint
+            self.args = (seg.p1.x, seg.p1.y)
+            self.x = seg.p1.x
+            self.y = seg.p1.y
+            del self.seg
+
+c = mParaPoint(mSegment(mPoint(1, 1), mPoint(1, 1)))
+print dir(c)
+print "-"*79
+print c.__hash__()
+print hash(c)
+print "-"*79
+print c.__dict__
