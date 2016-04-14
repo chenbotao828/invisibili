@@ -1,27 +1,5 @@
 # coding=utf-8
 from __future__ import division
-'''
--------------------------------------------------------------------------------
-Const data of invisibili
--------------------------------------------------------------------------------
-'''
-
-
-class _const(object):
-    "const class"
-
-    def __setattr__(self, key, value):
-        if key in self.__dict__:
-            raise Warning("Const Error")
-        else:
-            self.__dict__[key] = value
-
-"define const data"
-const = _const()
-
-"type of numbers"
-const.typeNum = [int, float, long]
-
 
 '''
 -------------------------------------------------------------------------------
@@ -63,7 +41,7 @@ class mPoint(myObject):
 
     def __init__(self, x, y):
 
-        typeTest([const.typeNum] * 2, x, y)
+        typeTest([const.Num] * 2, x, y)
         self.args = (x, y)
         self.x = x
         self.y = y
@@ -116,7 +94,7 @@ class linearEquation(myObject):
 
     def __init__(self, a, b, xSpan):
 
-        typeTest([const.typeNum, const.typeNum, mSpan], a, b, xSpan)
+        typeTest([const.Num, const.Num, mSpan], a, b, xSpan)
         self.args = (a, b, xSpan)
         self.a = a
         self.b = b
@@ -128,7 +106,7 @@ class vtclinearEquation(myObject):
 
     def __init__(self, c, ySpan):
 
-        typeTest([const.typeNum, mSpan], c, ySpan)
+        typeTest([const.Num, mSpan], c, ySpan)
         self.args = (c, ySpan)
         self.c = c
         self.ySpan = ySpan
@@ -139,7 +117,7 @@ class mSpan(myObject):
 
     def __init__(self, a, b):
 
-        typeTest([const.typeNum] * 2, a, b)
+        typeTest([const.Num] * 2, a, b)
         if a > b:
             a, b = b, a
         self.args = (a, b)
@@ -147,16 +125,37 @@ class mSpan(myObject):
         self.b = b
 
 
-class mWallSet(myObject):
-    '''an unordered wall list'''
+class mWallset(myObject):
+    '''wall set'''
 
-    def __init__(self, wallList, attDict={}):
+    def __init__(self, *swalls):
 
-        typeTest([list, dict], wallList, attDict)
-        self.args = (sorted(wallList), attDict)
-        self.wallList = sorted(wallList)
-        self.attDict = attDict
+        typeTest([const.Wall] * len(swalls), *swalls)
+        self.args = swalls
+        self.swalls = list(swalls)
 
+'''
+-------------------------------------------------------------------------------
+Const data of invisibili
+-------------------------------------------------------------------------------
+'''
+
+
+class _const(object):
+    "const class"
+
+    def __setattr__(self, key, value):
+        if key in self.__dict__:
+            raise Warning("Const Error")
+        else:
+            self.__dict__[key] = value
+
+"define const data"
+const = _const()
+
+"type of numbers"
+const.Num = [int, float, long]
+const.Wall = [mSwall]
 
 '''
 -------------------------------------------------------------------------------
@@ -304,7 +303,7 @@ def isIntersectSpan(span1, span2):
 def numInSpan(num, aSpan):
     '''return True if a num is in a range '''
 
-    typeTest([const.typeNum, mSpan], num, aSpan)
+    typeTest([const.Num, mSpan], num, aSpan)
     if aSpan.a <= num <= aSpan.b:
         return True
     return False
@@ -396,7 +395,7 @@ def jointSeg(seg1, seg2):
 def linearEquationY(linearEq, x):
     '''given linear equation and X return Y or Y span'''
 
-    typeTest([[linearEquation, vtclinearEquation], const.typeNum], linearEq, x)
+    typeTest([[linearEquation, vtclinearEquation], const.Num], linearEq, x)
     if type(linearEq) == vtclinearEquation:
         if x == linearEq.c:
             return linearEq.ySpan
@@ -462,6 +461,33 @@ def segIntersectPoint(seg1, seg2):
             return mPoint(x, y)
 
 
+def intersectSeg(seg1, seg2):
+    '''return list of intersected segments'''
+
+    typeTest([mSegment] * 2, seg1, seg2)
+
+    if not isIntersectSeg(seg1, seg2):
+        return [seg1, seg2]
+    ip = segIntersectPoint(seg1, seg2)
+    if type(ip) == mSegPoint:
+        raise Exception("<%s> and <%s> is overlapped!" %
+                        (seg1, seg2))
+    if type(ip) == mPoint:
+        if ip in seg1.args and ip in seg2.args:
+            return [seg1, seg2]
+        if ip in seg1.args or ip in seg2.args:
+            if ip in seg1.args:
+                seg1, seg2 = seg2, seg1
+            seg3 = mSegment(seg1.p1, ip)
+            seg4 = mSegment(ip, seg1.p2)
+            return [seg2, seg3, seg4]
+        else:
+            return [mSegment(seg1.p1, ip),
+                    mSegment(ip, seg1.p2),
+                    mSegment(seg2.p1, ip),
+                    mSegment(ip, seg2.p2)]
+
+
 def intersectSwall(sw1, sw2):
     '''return list of straight walls'''
 
@@ -469,31 +495,66 @@ def intersectSwall(sw1, sw2):
     seg1 = sw1.seg
     seg2 = sw2.seg
 
-    if not isIntersectSeg(seg1, seg2):
-        return mWallSet([sw1, sw2])
-
+    segList = intersectSeg(seg1, seg2)
+    if len(segList) == 2:
+        return [sw1, sw2]
     ip = segIntersectPoint(seg1, seg2)
-    if type(ip) == mSegPoint:
-        raise Exception("<%s> and <%s> is overlapped!" %
-                        (sw1, sw2))
+    if len(segList) == 3:
+        if ip in seg1.args:
+            seg1, seg2 = seg2, seg1
+            sw1, sw2 = sw2, sw1
+            sw3 = mSwall(segList[1], sw1.attDict)
+            sw4 = mSwall(segList[2], sw1.attDict)
+            return [sw2, sw3, sw4]
+    if len(segList) == 4:
+        return [mSwall(mSegment(seg1.p1, ip), sw1.attDict),
+                    mSwall(mSegment(ip, seg1.p2), sw1.attDict),
+                    mSwall(mSegment(seg2.p1, ip), sw2.attDict),
+                    mSwall(mSegment(ip, seg2.p2), sw2.attDict)]
+    # if not isIntersectSeg(seg1, seg2):
+    #     return [sw1, sw2]
 
-    if type(ip) == mPoint:
-        if ip in seg1.args and ip in seg2.args:
-            return mWallSet([sw1, sw2])
-        if ip in seg1.args or ip in seg2.args:
-            if ip in seg1.args:
-                seg1, seg2 = seg2, seg1
-                sw1, sw2 = sw2, sw1
-            sw3 = mSwall(mSegment(seg1.p1, ip), sw1.attDict)
-            sw4 = mSwall(mSegment(ip, seg1.p2), sw1.attDict)
-            return mWallSet([sw2, sw3, sw4])
-        else:
-            return mWallSet([
-                            mSwall(mSegment(seg1.p1, ip), sw1.attDict),
-                            mSwall(mSegment(ip, seg1.p2), sw1.attDict),
-                            mSwall(mSegment(seg2.p1, ip), sw2.attDict),
-                            mSwall(mSegment(ip, seg2.p2), sw2.attDict)])
+    # ip = segIntersectPoint(seg1, seg2)
+    # if type(ip) == mSegPoint:
+    #     raise Exception("<%s> and <%s> is overlapped!" %
+    #                     (sw1, sw2))
 
+    # if type(ip) == mPoint:
+    #     if ip in seg1.args and ip in seg2.args:
+    #         return [sw1, sw2]
+    #     if ip in seg1.args or ip in seg2.args:
+    #         if ip in seg1.args:
+    #             seg1, seg2 = seg2, seg1
+    #             sw1, sw2 = sw2, sw1
+    #         sw3 = mSwall(mSegment(seg1.p1, ip), sw1.attDict)
+    #         sw4 = mSwall(mSegment(ip, seg1.p2), sw1.attDict)
+    #         return [sw2, sw3, sw4]
+    #     else:
+    #         return [mSwall(mSegment(seg1.p1, ip), sw1.attDict),
+    #                 mSwall(mSegment(ip, seg1.p2), sw1.attDict),
+    #                 mSwall(mSegment(seg2.p1, ip), sw2.attDict),
+    #                 mSwall(mSegment(ip, seg2.p2), sw2.attDict)]
+
+
+# def addSwall(aSwall, aWallset):
+#     '''return a wall set, a swall added'''
+
+#     typeTest([mSwall, mWallset], aSwall, aWallset)
+#     for anotherSwall in aWallset.swalls:
+#         if rectOverlapped(inRect(aSwall), inRect(anotherSwall)):
+#             if isIntersectSeg(aSwall.seg, anotherSwall.seg):
+#                 pass
+
+# myFunTest(addSwall, goal, args)
+
+
+# def wallsetSeg(aWallset):
+#     '''return list of segments of wall set'''
+
+#     typeTest([mWallset], aWallset)
+
+
+# myFunTest(wallsetSeg, goal, args)
 
 '''
 -------------------------------------------------------------------------------
@@ -501,6 +562,10 @@ unit test of invisibili
 -------------------------------------------------------------------------------
 '''
 if __name__ == '__main__':
+    myFunTest(intersectSeg,
+              [mSegment(mPoint(0.5, 0.5), mPoint(0, 1)), mSegment(mPoint(0.5, 0.5), mPoint(1, 0)), mSegment(mPoint(
+                  0, 0), mPoint(0.5, 0.5)), mSegment(mPoint(0.5, 0.5), mPoint(1, 1))], mSegment(mPoint(0, 1), mPoint(1, 0)),
+              mSegment(mPoint(0, 0), mPoint(1, 1)))
     equation2segGoal = mSegment(mPoint(3, 0), mPoint(3, 1))
     myFunTest(equation2seg, equation2segGoal,
               vtclinearEquation(3, mSpan(0, 1)))
@@ -542,19 +607,22 @@ if __name__ == '__main__':
     #           seg2)
     sw1 = mSwall(mSegment(mPoint(0, 0), mPoint(1, 1)))
     sw2 = mSwall(mSegment(mPoint(2, 2), mPoint(3, 3)))
-    myFunTest(intersectSwall, mWallSet([sw1, sw2]), sw1, sw2)
+    myFunTest(intersectSwall, [sw1, sw2], sw1, sw2)
     sw3 = mSwall(mSegment(mPoint(0.5, 0.5), mPoint(1, 1)))
     # myFunTest(intersectSwall,[sw1, sw3], sw1, sw3)
     sw4 = mSwall(mSegment(mPoint(2, 2), mPoint(1, 1)))
-    myFunTest(intersectSwall, mWallSet([sw1, sw4]), sw1, sw4)
+    myFunTest(intersectSwall, [sw1, sw4], sw1, sw4)
     sw5 = mSwall(mSegment(mPoint(1, 0), mPoint(0.5, 0.5)))
     sw6 = mSwall(mSegment(mPoint(0, 0), mPoint(0.5, 0.5)))
     sw7 = mSwall(mSegment(mPoint(1, 1), mPoint(0.5, 0.5)))
-    myFunTest(intersectSwall, mWallSet([sw5, sw7, sw6, ]), sw1, sw5)
-    sw8 = mSwall(mSegment(mPoint(0, 1), mPoint(1, 0)))
+    # myFunTest(intersectSwall, [sw5, sw7, sw6, ], sw1, sw5)
+    sw8 = mSwall(mSegment(mPoint(0, 1), mPoint(1, 0)), {1:1})
     sw9 = mSwall(mSegment(mPoint(0.5, 0.5), mPoint(0, 1)))
-    # myFunTest(intersectSwall, mWallSet([mSwall(mSegment(mPoint(0, 0), mPoint(0.5, 0.5))), mSwall(mSegment(mPoint(1, 0), mPoint(0.5, 0.5))), mSwall(mSegment(mPoint(1, 1), mPoint(0.5, 0.5))), mSwall(mSegment(mPoint(0.5, 0.5), mPoint(0, 1)))]), mSwall(mSegment(mPoint(0, 0), mPoint(1, 1))), mSwall(mSegment(mPoint(0, 1), mPoint(1, 0))))
-    # print intersectSwall(mSwall(mSegment(mPoint(0, 0), mPoint(1, 1)), {"n": 1}), mSwall(mSegment(mPoint(0, 1), mPoint(1, 0)), {"n": 2}))
-    # print intersectSwall(mSwall(mSegment(mPoint(0, 1), mPoint(1, 0)), {"n": 2}), mSwall(mSegment(mPoint(0, 0), mPoint(1, 1)), {"n": 1}))
-    # print mWallSet([mSwall(mSegment(mPoint(0, 0), mPoint(0.5, 0.5))), mSwall(mSegment(mPoint(1, 0), mPoint(0.5, 0.5))), mSwall(mSegment(mPoint(1, 1), mPoint(0.5, 0.5))), mSwall(mSegment(mPoint(0.5, 0.5), mPoint(0, 1)))])
-    # print mWallSet([sw9, sw1, sw3]) == mWallSet([sw1, sw3, sw9])
+    # myFunTest(intersectSwall, [sw7,sw5,sw6,sw9],  sw8,sw1)
+    w1 = mSwall(mSegment(mPoint(0, 2), mPoint(1, 0)))
+    w2 = mSwall(mSegment(mPoint(0, 0), mPoint(1, 2)))
+    w3 = mSwall(mSegment(mPoint(1, 0), mPoint(0.5, 1.0)), {})
+    w4 = mSwall(mSegment(mPoint(0.5, 1.0), mPoint(0, 2)), {})
+    w5 = mSwall(mSegment(mPoint(0, 0), mPoint(0.5, 1.0)), {})
+    w6 = mSwall(mSegment(mPoint(0.5, 1.0), mPoint(1, 2)), {})
+    # myFunTest(intersectSwall, [w3, w4, w5, w6],  w2, w1)
