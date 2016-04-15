@@ -2,6 +2,7 @@
 from __future__ import division
 import sys
 
+
 class _const(object):
     "const class"
 
@@ -15,22 +16,21 @@ class _const(object):
 const = _const()
 
 "type of numbers"
-const.typeNum = [int, float, long]
+const.Num = [int, float, long]
 
 
 def myFunTest(fun, goal, *args):
     '''report errors if function is failed'''
     import datetime
     ret = "DEFAULT"
-    if type(fun).__name__ != 'function':
-        error = "1st parameter expect a function(" \
+    if type(fun).__name__ not in ['function', 'instancemethod']:
+        error = "1st parameter expect a function or instancemethod(" \
             + type(fun).__name__ + " given)"
         raise TypeError(error)
     startTime = datetime.datetime.now()
     ret = fun(*args)
     endTime = datetime.datetime.now()
-    if not (ret == goal):
-        get_cur_info()
+    if not (ret == goal) or type(ret) == Exception:
         firstLineStr = "Function Error: \"%s\"" % fun.__name__
         l = (79 - len(firstLineStr)) // 2
         print("-" * l + firstLineStr + "-" * l)
@@ -41,6 +41,7 @@ def myFunTest(fun, goal, *args):
         lastLineStr = "Run time: %s" % (endTime - startTime)
         l = (79 - len(lastLineStr)) // 2
         print("-" * l + lastLineStr + "-" * l)
+        raise Warning("%s Error" % fun.__name__)
 
 
 def typeTest(typeList, *args):
@@ -115,13 +116,38 @@ class mParaPoint(myObject):
             self.y = seg.p1.y
             del self.seg
 
-# c = mParaPoint(mSegment(mPoint(1, 1), mPoint(1, 1)))
-# print dir(c)
-# print "-"*79
-# print c.__hash__()
-# print hash(c)
-# print "-"*79
-# print c.__dict__
-p1 = mPoint(1.0,2)
-p2 = mPoint(2.0,3)
-print mS
+
+class aa(myObject):
+    '''docstring for aa'''
+
+    def __init__(self, n):
+
+        typeTest([const.Num], n)
+        self.args = (n)
+        self.n = n
+
+    def mul(self, m):
+        '''docstring for mul'''
+
+        typeTest([const.Num], m)
+        return m * self.n
+
+# myFunTest(aa(3).mul, 12, 4)
+
+
+class num(myObject):
+    '''docstring for num'''
+
+    def __init__(self, n):
+
+        typeTest([const.Num], n)
+        self.args = (n)
+        self.n = n
+
+    def j(self, n):
+        '''docstring for j'''
+
+        typeTest([const.Num], n)
+        return self.n - n
+
+myFunTest(num(10).j, 8, 2)
