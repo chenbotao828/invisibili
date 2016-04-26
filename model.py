@@ -32,10 +32,8 @@ class myObject(object):
             return True
         return False
 
-    def __cmp__(self, another):
-        if type(self) == type(another) and self.args == another.args:
-            return True
-        return False
+    def __hash__(self):
+        return hash((type(self), self.args))
 
 
 class point(myObject):
@@ -142,17 +140,18 @@ class line(myObject):
         self.p1 = p1
         self.p2 = p2
 
-    def offset(self, dis):
-        '''return Models'''
+    # def offset(self, dis):
+    #     '''return Models'''
 
-        typeTest([Num], dis)
-        if isinstance(p1, point2d) and isinstance(p2, point2d):
-            v = vector(p2.x-p1.x, p2.y-p1.y)
-        elif: 
-        ret = Models()
-        ret.db.add()
+    #     typeTest([Num], dis)
+    #     if isinstance(p1, point2d) and isinstance(p2, point2d):
+    #         v = vector(p2.x-p1.x, p2.y-p1.y)
+    #     elif:
+    #     ret = Models()
+    #     ret.db.add()
 
-myFunTest(Class().offset, args, goal="goal")
+# myFunTest(Class().offset, args, goal="goal")
+
 
 class circle(myObject):
     '''2D circle'''
@@ -246,12 +245,89 @@ class mtext(myObject):
 class Models(myObject):
     '''Models Set'''
 
-    def __init__(self):
+    def __init__(self, s=set()):
 
-        self.db = set()
+        self.db = s
         self.args = (self.db,)
-        self.list = list(self.db)
-        self = self.db
+
+    def add(self, model):
+        '''add a model to Models '''
+
+        typeTest([myObject], model)
+        self.db.add(model)
+
+    def remove(self, model):
+        '''remove a model'''
+
+        typeTest([myObject], model)
+        self.db.remove(model)
+
+    def clear(self):
+        '''clear Model database'''
+
+        self.db.clear()
+
+    def __contains__(self, model):
+
+        return self.db.__contains__(model)
+
+    def __len__(self):
+
+        return self.db.__len__()
+
+    def __iter__(self):
+
+        return self.db.__iter__()
+
+
+    methodlist = ["issubset", "__or__","__sub__","__ne__"]
+    for i in methodlist:
+        a = '''def %s(self, other):
+            \"X.%s(Y)\"
+            typeTest([Models], other)
+            a = self.db.%s(other.db)
+            if type(a) ==  bool:
+                return a
+            return Models(a)''' % (i, i, i)
+        exec a in globals(), locals()
+
+    # def __and__(self, other):
+    #     typeTest([Models], other)
+    #     return Models(self.db.__and__(other.db))
+
+#     def __or__(self, other):
+#         "x|y"
+
+#         typeTest([Models], other)
+#         return Models(self.db.__or__(other.db))
+
+#     def __sub__(self, other):
+#         "x-y"
+
+#         typeTest([Models], other)
+#         return Models(self.db.__sub__(other.db))
+#     def __ne__(self, other):
+#         "x-y"
+
+#         typeTest([Models], other)
+#         return Models(self.db.__ne__(other.db))
+
+#     def isdisjoint(self, other):
+#         "x-y"
+
+#         typeTest([Models], other)
+#         return Models(self.db.isdisjoint(other.db))
+
+#     def issubset(self, other):
+#         "x-y"
+
+#         typeTest([Models], other)
+#         return Models(self.db.issubset(other.db))
+# ----------------------
+
+a = Models({point2d(1, 1), point2d(2, 2)})
+b = Models({point2d(1, 1), point2d(2, 2)})
+print a.__or__(b)
 
 
 class Wall(myObject):
@@ -266,12 +342,12 @@ class Wall(myObject):
         self.hight = hight
         self.align = align
 
-    def outline(self):
-        '''return Models'''
+    # def outline(self):
+    #     '''return Models'''
 
-        ret = Models()
-        for m in self.base.db:
-            if m.__class__.__name__ in []
+    #     ret = Models()
+    #     for m in self.base.db:
+    #         if m.__class__.__name__ in []
 
 
-myFunTest(Class().outline, args, goal="goal")
+# myFunTest(Class().outline, args, goal="goal")
