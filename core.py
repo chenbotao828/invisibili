@@ -31,11 +31,13 @@ def typeTest(typeList, *args):
         raise IndexError("len(typeList) != len(args) (%d != %d)" % (l1, l2))
     for i in range(l1):
         if type(typeList[i]) in [list, tuple]:
-            if type(args[i]) not in typeList[i]:
+            if not isinstance(args[i], tuple(typeList[i])):
+            # if type(args[i]) not in typeList[i]:
                 raise TypeError("%dth parameter expect %s, given %s \"%s\"" %
                                 (i + 1, str([x.__name__ for x in typeList[i]]),
                                  type(args[i]).__name__, str(args[i])))
-        elif type(args[i]) != typeList[i]:
+        elif not isinstance(args[i], typeList[i]):
+        # elif type(args[i]) != typeList[i]:
             raise TypeError("%dth parameter expect %s, given %s \"%s\"" %
                             (i + 1, typeList[i].__name__,
                                 type(args[i]).__name__, str(args[i])))

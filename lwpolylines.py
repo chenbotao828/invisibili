@@ -9,4 +9,9 @@ points = [(0, 0,), (3, 0, .1, .2, 1.5), (6, 0, .1, .05), (9, 0)]
 msp.add_lwpolyline(points)
 msp.add_arc((0,0),10,30,90)
 
-dwg.saveas("lwpolyline5.dxf")
+print dwg.entitydb._database
+
+# ezdxf.drawing.modelspace().foo=foo
+# from ezdxf import *
+# ezdxf.GraphicsFactory().foo=foo
+# dwg.saveas("lwpolyline5.dxf")

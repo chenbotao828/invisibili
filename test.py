@@ -150,4 +150,18 @@ class num(myObject):
         typeTest([const.Num], n)
         return self.n - n
 
-myFunTest(num(10).j, 8, 2)
+
+
+class A(object):
+    def __init__(self, *args):
+        self.args = args
+    def __eq__(self, another):
+        if type(self) == type(another) and self.__dict__ == self.__dict__:
+            return True
+        return False
+
+a = A(1)
+b = A(1)
+print a==b
+print [a] == [b]
+print set([a])set([b])

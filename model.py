@@ -32,32 +32,14 @@ class myObject(object):
             return True
         return False
 
-
-class Wall(myObject):
-    '''Wall object'''
-
-    def __init__(self, base, width=200, hight=3000, align="center"):
-
-        typeTest([Shape, Num, Num, Str], base, width, hight, align)
-        self.args = (base, width, hight, align)
-        self.base = base
-        self.width = width
-        self.hight = hight
-        self.align = align
+    def __cmp__(self, another):
+        if type(self) == type(another) and self.args == another.args:
+            return True
+        return False
 
 
-class ClassName(myObject):
-    '''docstring for ClassName'''
-
-    def __init__(self, arg):
-
-        typeTest([typeList], arg)
-        self.args = (arg)
-        self.arg = arg
-
-
-class Point(myObject):
-    '''docstring for Point'''
+class point(myObject):
+    '''docstring for point'''
 
     def __init__(self, *coords):
 
@@ -69,14 +51,14 @@ class Point(myObject):
         self.x = coords[0]
         self.y = coords[1]
         if len(coords) == 2:
-            self.__class__ = type(Point2D(0, 0))
+            self.__class__ = type(point2d(0, 0))
         else:
             self.z = coords[2]
-            self.__class__ = type(Point3D(0, 0, 0))
+            self.__class__ = type(point3d(0, 0, 0))
 
 
-class Point2D(Point):
-    '''docstring for Point2D'''
+class point2d(point):
+    '''docstring for point2d'''
 
     def __init__(self, x, y):
 
@@ -88,11 +70,11 @@ class Point2D(Point):
     def threeD(self, z=0):
         '''docstring for threeD'''
 
-        return Point3D(self.x, self.y, z)
+        return point3d(self.x, self.y, z)
 
 
-class Point3D(Point):
-    '''docstring for Point3D'''
+class point3d(point):
+    '''docstring for point3d'''
 
     def __init__(self, x, y, z):
 
@@ -105,37 +87,104 @@ class Point3D(Point):
     def twoD(self):
         '''docstring for twoD'''
 
-        return Point2D(self.x, self.y)
+        return point2d(self.x, self.y)
 
 
-class Line(myObject):
-    '''2D/3D Line P1 to P2'''
+class vector(myObject):
+    '''2D/3D vector'''
+
+    def __init__(self, *coords):
+
+        if len(coords) not in [2, 3]:
+            raise Exception("Expect 2 or 3 coords, given %d" % len(coords))
+
+        typeTest([Num] * len(coords), *coords)
+        self.args = (coords)
+        self.x = coords[0]
+        self.y = coords[1]
+        if len(coords) == 2:
+            self.__class__ = type(vector2d(0, 0))
+        else:
+            self.z = coords[2]
+            self.__class__ = type(vector3d(0, 0, 0))
+
+
+class vector2d(vector):
+    '''docstring for vector2d'''
+
+    def __init__(self, x, y):
+
+        typeTest([Num, Num], x, y)
+        self.args = (x, y)
+        self.x = x
+        self.y = y
+
+
+class vector3d(vector):
+    '''docstring for vector3d'''
+
+    def __init__(self, x, y, z):
+
+        typeTest([Num, Num, Num], x, y, z)
+        self.args = (x, y, z)
+        self.x = x
+        self.y = y
+        self.z = z
+
+
+class line(myObject):
+    '''2D/3D line P1 to P2'''
 
     def __init__(self, p1, p2):
 
-        typeTest([Point, Point], p1, p2)
+        typeTest([point, point], p1, p2)
         self.args = (p1, p2)
         self.p1 = p1
         self.p2 = p2
 
+    def offset(self, dis):
+        '''return Models'''
 
-class Circle(myObject):
-    '''2D Circle'''
+        typeTest([Num], dis)
+        if isinstance(p1, point2d) and isinstance(p2, point2d):
+            v = vector(p2.x-p1.x, p2.y-p1.y)
+        elif: 
+        ret = Models()
+        ret.db.add()
+
+myFunTest(Class().offset, args, goal="goal")
+
+class circle(myObject):
+    '''2D circle'''
 
     def __init__(self, center, radius):
 
-        typeTest([Point, Num], center, radius)
+        typeTest([point, Num], center, radius)
         self.args = (center, radius)
         self.center = center
         self.radius = radius
 
 
-class LWPolyline(myObject):
-    '''2D Light weight polyline, composed of Point list'''
+class arc(myObject):
+    '''docstring for arc'''
+
+    def __init__(self, center, radius, start_angle, end_angle):
+
+        typeTest(
+            [point, Num, Num, Num], center, radius, start_angle, end_angle)
+        self.args = (center, radius, start_angle, end_angle)
+        self.center = center
+        self.radius = radius
+        self.start_angle = start_angle
+        self.end_angle = end_angle
+
+
+class lwpolyline(myObject):
+    '''2D Light weight polyline, composed of point list'''
 
     def __init__(self, *points):
 
-        typeTest([Point] * len(points), *points)
+        typeTest([point2d] * len(points), *points)
         self.args = (points)
         self.points = points
 
@@ -145,7 +194,7 @@ class ellipse(myObject):
 
     def __init__(self, center, major_axis, ratio, start_param=0, end_param=6.283185307):
 
-        typeTest([Point, ], center, major_axis, ratio, start_param, end_param)
+        typeTest([point, ], center, major_axis, ratio, start_param, end_param)
         self.args = (center, major_axis, ratio, start_param, end_param)
         self.center = center
         self.major_axis = major_axis
@@ -154,23 +203,75 @@ class ellipse(myObject):
         self.end_param = end_param
 
 
-# class Shape(myObject):
-#     '''a unity of shapes, including Line, Circle, Arc and
-#      LWPolyline'''
+class text(myObject):
+    '''docstring for text'''
 
-#     def __init__(self, *shapes):
+    def __init__(self, text):
 
-#         typeTest([[Line, Circle, Arc, LWPolyline]] * len(shapes), *shapes)
-#         self.args = (shapes)
-#         self.shapes = shapes
+        typeTest([str], text)
+        self.args = (text)
+        self.text = text
 
-#     def draw(self, modelspace):
-#         '''draw a shape in modelspace'''
 
-#         typeTest([Layout], modelspace)
-#         pass
+class polyline2d(myObject):
+    '''docstring for polyline2d'''
 
-# myFunTest(Class().draw, args, goal="goal")
-# import ezdxf
-# dwg = ezdxf.new('AC1015')
-# msp = dwg.modelspace()
+    def __init__(self, *points):
+
+        typeTest([point2d] * len(points), *points)
+        self.args = (points)
+        self.points = points
+
+
+class polyline3d(myObject):
+    '''docstring for polyline3d'''
+
+    def __init__(self, *points):
+
+        typeTest([point3d] * len(points), *points)
+        self.args = (points)
+        self.points = points
+
+
+class mtext(myObject):
+    '''docstring for mtext'''
+
+    def __init__(self, text):
+
+        typeTest([str], text)
+        self.args = (text)
+        self.text = text
+
+
+class Models(myObject):
+    '''Models Set'''
+
+    def __init__(self):
+
+        self.db = set()
+        self.args = (self.db,)
+        self.list = list(self.db)
+        self = self.db
+
+
+class Wall(myObject):
+    '''Wall object'''
+
+    def __init__(self, base, width=200, hight=3000, align="center"):
+
+        typeTest([Models, Num, Num, str], base, width, hight, align)
+        self.args = (base, width, hight, align)
+        self.base = base
+        self.width = width
+        self.hight = hight
+        self.align = align
+
+    def outline(self):
+        '''return Models'''
+
+        ret = Models()
+        for m in self.base.db:
+            if m.__class__.__name__ in []
+
+
+myFunTest(Class().outline, args, goal="goal")
