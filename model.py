@@ -54,6 +54,21 @@ class point(myObject):
             self.z = coords[2]
             self.__class__ = type(point3d(0, 0, 0))
 
+    def move(self, v):
+        '''vector move'''
+
+        typeTest([vector], v)
+        if isinstance(self, point2d):
+            if isinstance(v, vector2d):
+                return point(self.x + v.x, self.y + v.y)
+            if isinstance(v, vector3d):
+                return point(self.x + v.x, self.y + v.y, v.z)
+        elif isinstance(self, point3d):
+            if isinstance(v, vector2d):
+                return point(self.x + v.x, self.y + v.y, self.z)
+            if isinstance(v, vector3d):
+                return point(self.x + v.x, self.y + v.y, self.z + v.z)
+
 
 class point2d(point):
     '''docstring for point2d'''
@@ -91,20 +106,66 @@ class point3d(point):
 class vector(myObject):
     '''2D/3D vector'''
 
-    def __init__(self, *coords):
+    def __init__(self, *args):
 
-        if len(coords) not in [2, 3]:
-            raise Exception("Expect 2 or 3 coords, given %d" % len(coords))
+        if len(args) not in [2, 3]:
+            raise Exception("Expect 2 or 3 coords, given %d" % len(args))
 
-        typeTest([Num] * len(coords), *coords)
-        self.args = (coords)
-        self.x = coords[0]
-        self.y = coords[1]
-        if len(coords) == 2:
+        typeTest([Num] * len(args), *args)
+        self.args = (args)
+        self.x = args[0]
+        self.y = args[1]
+        if len(args) == 2:
             self.__class__ = type(vector2d(0, 0))
         else:
-            self.z = coords[2]
+            self.z = args[2]
             self.__class__ = type(vector3d(0, 0, 0))
+
+    def __sub__(self, another):
+
+        if self.__class__ != another.__class__:
+            raise TypeError("Expect 2 vector2d/vector3d")
+        new = tuple(map(lambda x, y: x - y, self.args, another.args))
+        return eval("vector" + str(new))
+
+    def __add__(self, another):
+
+        if self.__class__ != another.__class__:
+            raise TypeError("Expect 2 vector2d/vector3d")
+        new = tuple(map(lambda x, y: x + y, self.args, another.args))
+        return eval("vector" + str(new))
+
+    def __mul__(self, another):
+
+        if self.__class__ != another.__class__:
+            raise TypeError("Expect 2 vector2d/vector3d")
+        new = sum(map(lambda x, y: x * y, self.args, another.args))
+        return new
+
+    @property
+    def length(self):
+
+        return sum(x**2 for x in self.args)**0.5
+
+    @property
+    def unit(self):
+
+        if self.length == 0:
+            return self
+        a = tuple(x / self.length for x in self.args)
+        return eval("vector" + str(a))
+
+    def clockwise(self, n=1):
+        '''clockwise 90 degree for n times'''
+
+        typeTest([int], n)
+        ret = self
+        for i in range(n):
+            if isinstance(ret, vector2d):
+                ret = vector(ret.y, -ret.x)
+            else:
+                ret = vector(ret.y, -ret.x, ret.z)
+        return ret
 
 
 class vector2d(vector):
@@ -140,18 +201,6 @@ class line(myObject):
         self.p1 = p1
         self.p2 = p2
 
-    # def offset(self, dis):
-    #     '''return Models'''
-
-    #     typeTest([Num], dis)
-    #     if isinstance(p1, point2d) and isinstance(p2, point2d):
-    #         v = vector(p2.x-p1.x, p2.y-p1.y)
-    #     elif:
-    #     ret = Models()
-    #     ret.db.add()
-
-# myFunTest(Class().offset, args, goal="goal")
-
 
 class circle(myObject):
     '''2D circle'''
@@ -159,9 +208,15 @@ class circle(myObject):
     def __init__(self, center, radius):
 
         typeTest([point, Num], center, radius)
-        self.args = (center, radius)
+        self.args = (center, abs(radius))
         self.center = center
-        self.radius = radius
+        self.radius = abs(radius)
+
+    def offset(self, dis):
+        '''outwards if dis > 0'''
+
+        typeTest([Num], dis)
+        return circle(self.center, self.radius + dis)
 
 
 class arc(myObject):
@@ -169,11 +224,11 @@ class arc(myObject):
 
     def __init__(self, center, radius, start_angle, end_angle):
 
-        typeTest(
-            [point, Num, Num, Num], center, radius, start_angle, end_angle)
-        self.args = (center, radius, start_angle, end_angle)
+        typeTest([point, Num, Num, Num],
+                 center, radius, start_angle, end_angle)
+        self.args = (center, abs(radius), start_angle, end_angle)
         self.center = center
-        self.radius = radius
+        self.radius = abs(radius)
         self.start_angle = start_angle
         self.end_angle = end_angle
 
@@ -191,13 +246,16 @@ class lwpolyline(myObject):
 class ellipse(myObject):
     '''docstring for ellipse'''
 
-    def __init__(self, center, major_axis, ratio, start_param=0, end_param=6.283185307):
+    def __init__(self, center, major_axis, ratio, start_param=0,
+                 end_param=6.283185307):
 
-        typeTest([point, ], center, major_axis, ratio, start_param, end_param)
-        self.args = (center, major_axis, ratio, start_param, end_param)
+        typeTest([point, Num, Num, Num], center,
+                 major_axis, ratio, start_param, end_param)
+        self.args = (center, abs(major_axis), abs(ratio),
+                     start_param, end_param)
         self.center = center
-        self.major_axis = major_axis
-        self.ratio = ratio
+        self.major_axis = abs(major_axis)
+        self.ratio = abs(ratio)
         self.start_param = start_param
         self.end_param = end_param
 
@@ -243,24 +301,40 @@ class mtext(myObject):
 
 
 class Models(myObject):
-    '''Models Set'''
+    '''model collection like set'''
 
     def __init__(self, s=set()):
 
         self.db = s
         self.args = (self.db,)
 
-    def add(self, model):
-        '''add a model to Models '''
+    def add(self, *model):
+        '''add one or more model'''
 
-        typeTest([myObject], model)
-        self.db.add(model)
+        typeTest([myObject] * len(model), *model)
+        # if not isinstance(model, tuple):
+        if len(model) == 1:
+            self.db.add(model)
+        else:
+            for m in model:
+                self.db.add(m)
+
+    def copy(self):
+        '''return a shallow copy of a set'''
+
+        return Models(self.db.copy())
 
     def remove(self, model):
         '''remove a model'''
 
         typeTest([myObject], model)
         self.db.remove(model)
+
+    def discard(self, model):
+        '''remove a model, do nothing if not exist'''
+
+        typeTest([myObject], model)
+        self.db.discard(model)
 
     def clear(self):
         '''clear Model database'''
@@ -279,75 +353,39 @@ class Models(myObject):
 
         return self.db.__iter__()
 
+    def pop(self):
 
-    methodlist = ["issubset", "__or__","__sub__","__ne__"]
-    for i in methodlist:
+        return self.db.pop()
+
+    def replace(self, old, new):
+
+        self.remove(old)
+        self.add(new)
+
+    setMethods = ["__and__", "__ge__", "__gt__", "__iand__",
+                  "__ior__", "__isub__", "__ixor__", "__le__", "__lt__",
+                  "__ne__", "__or__", "__rand__", "__ror__", "__rsub__",
+                  "__rxor__", "__sub__", "__xor__", "difference",
+                  "difference_update", "intersection", "intersection_update",
+                  "isdisjoint", "issubset", "issuperset",
+                  "symmetric_difference", "symmetric_difference_update",
+                  "union", "update"]
+    for method in setMethods:
         a = '''def %s(self, other):
-            \"X.%s(Y)\"
             typeTest([Models], other)
             a = self.db.%s(other.db)
-            if type(a) ==  bool:
+            if not isinstance(a, Models):
                 return a
-            return Models(a)''' % (i, i, i)
+            return Models(a)''' % (method, method)
         exec a in globals(), locals()
 
-    # def __and__(self, other):
-    #     typeTest([Models], other)
-    #     return Models(self.db.__and__(other.db))
+def move(v, models):
+    '''move model position using vector'''
 
-#     def __or__(self, other):
-#         "x|y"
+    typeTest([vector, myObject], v, model)
+    if isinstance(model, Models):
+        for m in model:
+            move(v, m)
+    
 
-#         typeTest([Models], other)
-#         return Models(self.db.__or__(other.db))
-
-#     def __sub__(self, other):
-#         "x-y"
-
-#         typeTest([Models], other)
-#         return Models(self.db.__sub__(other.db))
-#     def __ne__(self, other):
-#         "x-y"
-
-#         typeTest([Models], other)
-#         return Models(self.db.__ne__(other.db))
-
-#     def isdisjoint(self, other):
-#         "x-y"
-
-#         typeTest([Models], other)
-#         return Models(self.db.isdisjoint(other.db))
-
-#     def issubset(self, other):
-#         "x-y"
-
-#         typeTest([Models], other)
-#         return Models(self.db.issubset(other.db))
-# ----------------------
-
-a = Models({point2d(1, 1), point2d(2, 2)})
-b = Models({point2d(1, 1), point2d(2, 2)})
-print a.__or__(b)
-
-
-class Wall(myObject):
-    '''Wall object'''
-
-    def __init__(self, base, width=200, hight=3000, align="center"):
-
-        typeTest([Models, Num, Num, str], base, width, hight, align)
-        self.args = (base, width, hight, align)
-        self.base = base
-        self.width = width
-        self.hight = hight
-        self.align = align
-
-    # def outline(self):
-    #     '''return Models'''
-
-    #     ret = Models()
-    #     for m in self.base.db:
-    #         if m.__class__.__name__ in []
-
-
-# myFunTest(Class().outline, args, goal="goal")
+myFunTest(move, args, goal="goal")

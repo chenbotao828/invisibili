@@ -30,14 +30,15 @@ def typeTest(typeList, *args):
     if l1 != l2:
         raise IndexError("len(typeList) != len(args) (%d != %d)" % (l1, l2))
     for i in range(l1):
-        if type(typeList[i]) in [list, tuple]:
-            if not isinstance(args[i], tuple(typeList[i])):
+        # if type(typeList[i]) in [list, tuple]:
+        if isinstance(typeList[i], (list, tuple)):
             # if type(args[i]) not in typeList[i]:
+            if not isinstance(args[i], tuple(typeList[i])):
                 raise TypeError("%dth parameter expect %s, given %s \"%s\"" %
                                 (i + 1, str([x.__name__ for x in typeList[i]]),
                                  type(args[i]).__name__, str(args[i])))
-        elif not isinstance(args[i], typeList[i]):
         # elif type(args[i]) != typeList[i]:
+        elif not isinstance(args[i], typeList[i]):
             raise TypeError("%dth parameter expect %s, given %s \"%s\"" %
                             (i + 1, typeList[i].__name__,
                                 type(args[i]).__name__, str(args[i])))
@@ -79,9 +80,6 @@ def myProTest(pro, goal):
                 endTime - startTime, ret, goal))
 
 
-import sys
-
-
 class TailRecurseException:
     def __init__(self, args, kwargs):
         self.args = args
@@ -99,6 +97,7 @@ def tail_call_optimized(g):
     function recurses in a non-tail context.
     """
     def func(*args, **kwargs):
+        import sys
         f = sys._getframe()
         if f.f_back and f.f_back.f_back \
                 and f.f_back.f_back.f_code == f.f_code:
