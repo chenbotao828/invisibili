@@ -49,9 +49,19 @@ class myObject(object):
             return type(self).__name__ + "(" + str(self.args) + ")"
         return type(self).__name__ + str(self.args)
 
+    def move(self, v):
+        '''move along vector'''
+
+        typeTest([vector], v)
+        ret = self
+        for apara in self.para:
+            if isinstance(self.__dict__[apara], point):
+                ret.__dict__[apara] = self.__dict__[apara].move(v)
+        return ret
+
 
 class point(myObject):
-    '''docstring for point'''
+    '''point'''
 
     def __init__(self, *coords):
 
@@ -86,23 +96,23 @@ class point(myObject):
 
 
 class point2d(point):
-    '''docstring for point2d'''
+    '''point2d'''
 
     def __init__(self, x, y):
-
+        point.__init__
         typeTest([c.N, c.N], x, y)
         self.para = ("x", "y")
         self.x = x
         self.y = y
 
     def threeD(self, z=0):
-        '''docstring for threeD'''
+        '''threeD'''
 
         return point3d(self.x, self.y, z)
 
 
 class point3d(point):
-    '''docstring for point3d'''
+    '''point3d'''
 
     def __init__(self, x, y, z):
 
@@ -113,7 +123,7 @@ class point3d(point):
         self.z = z
 
     def twoD(self):
-        '''docstring for twoD'''
+        '''twoD'''
 
         return point2d(self.x, self.y)
 
@@ -185,7 +195,7 @@ class vector(myObject):
 
 
 class vector2d(vector):
-    '''docstring for vector2d'''
+    '''vector2d'''
 
     def __init__(self, x, y):
 
@@ -196,7 +206,7 @@ class vector2d(vector):
 
 
 class vector3d(vector):
-    '''docstring for vector3d'''
+    '''vector3d'''
 
     def __init__(self, x, y, z):
 
@@ -212,7 +222,7 @@ class line(myObject):
 
     def __init__(self, p1, p2):
 
-        typeTest([point, point], p1, p2)
+        typeTest([point, p1.__class__], p1, p2)
         self.para = ("p1", "p2")
         self.p1 = p1
         self.p2 = p2
@@ -236,7 +246,7 @@ class circle(myObject):
 
 
 class arc(myObject):
-    '''docstring for arc'''
+    '''arc'''
 
     def __init__(self, center, radius, start_angle, end_angle):
 
@@ -260,7 +270,7 @@ class lwpolyline(myObject):
 
 
 class ellipse(myObject):
-    '''docstring for ellipse'''
+    '''ellipse'''
 
     def __init__(self, center, major_axis, ratio, start_param=0,
                  end_param=6.283185307):
@@ -277,7 +287,7 @@ class ellipse(myObject):
 
 
 class text(myObject):
-    '''docstring for text'''
+    '''text'''
 
     def __init__(self, text):
 
@@ -287,7 +297,7 @@ class text(myObject):
 
 
 class polyline2d(myObject):
-    '''docstring for polyline2d'''
+    '''polyline2d'''
 
     def __init__(self, *points):
 
@@ -297,7 +307,7 @@ class polyline2d(myObject):
 
 
 class polyline3d(myObject):
-    '''docstring for polyline3d'''
+    '''polyline3d'''
 
     def __init__(self, *points):
 
@@ -307,7 +317,7 @@ class polyline3d(myObject):
 
 
 class mtext(myObject):
-    '''docstring for mtext'''
+    '''mtext'''
 
     def __init__(self, text):
 
@@ -324,95 +334,132 @@ class Models(myObject):
         self.db = db
         self.para = ("db",)
 
-    def add(self, *model):
-        '''add one or more model'''
-
-        typeTest([myObject] * len(model), *model)
-        # if not isinstance(model, tuple):
-        if len(model) == 1:
-            self.db.add(model)
-        else:
-            for m in model:
-                self.db.add(m)
-
     def copy(self):
         '''return a shallow copy of a set'''
 
         return Models(self.db.copy())
 
-    def remove(self, model):
-        '''remove a model'''
+    def add(self, *model):
+        '''add one or more model to Models collection,
+        This has no effect if the element is already present.'''
 
-        typeTest([myObject], model)
-        self.db.remove(model)
+        typeTest([myObject] * len(model), *model)
+        db = self.db.copy()
+        if isinstance(model, tuple) and len(model) == 1:
+            db.add(model[0])
 
-    def discard(self, model):
+        else:
+            for m in model:
+                db.add(m)
+        return Models(db)
+
+    def remove(self, *model):
+        '''remove model one or more model to Models collection'''
+
+        typeTest([myObject] * len(model), *model)
+        db = self.db.copy()
+        if isinstance(model, tuple) and len(model) == 1:
+            db.remove(model[0])
+        else:
+            for m in model:
+                db.remove(m)
+        return Models(db)
+
+    def discard(self, *model):
         '''remove a model, do nothing if not exist'''
 
-        typeTest([myObject], model)
-        self.db.discard(model)
+        typeTest([myObject] * len(model), *model)
+        db = self.db.copy()
+        if isinstance(model, tuple) and len(model) == 1:
+            db.discard(model[0])
+        else:
+            for m in model:
+                db.discard(m)
+        return Models(db)
 
     def clear(self):
         '''clear Model database'''
 
-        self.db.clear()
+        return Models()
 
     def __contains__(self, model):
+        "x.__contains__(y) <==> y in x."
 
         return self.db.__contains__(model)
 
     def __len__(self):
-
+        "x.__len__() <==> len(x)"
         return self.db.__len__()
 
     def __iter__(self):
+        "x.__iter__() <==> iter(x)"
 
         return self.db.__iter__()
 
     def pop(self):
+        '''Remove and return an arbitrary set element.
+        Raises KeyError if the set is empty. '''
 
         return self.db.pop()
 
     def replace(self, old, new):
+        "replace old to new one"
 
-        self.remove(old)
-        self.add(new)
+        typeTest([myObject, old.__class__], old, new)
+        db = self.db.copy()
+        db.remove(old)
+        db.add(new)
+        return Models(db)
 
-    setMethods = ["__and__", "__ge__", "__gt__", "__iand__",
-                  "__ior__", "__isub__", "__ixor__", "__le__", "__lt__",
-                  "__ne__", "__or__", "__rand__", "__ror__", "__rsub__",
-                  "__rxor__", "__sub__", "__xor__", "difference",
-                  "difference_update", "intersection", "intersection_update",
-                  "isdisjoint", "issubset", "issuperset",
-                  "symmetric_difference", "symmetric_difference_update",
-                  "union", "update"]
+    setMethods = {
+        "__ge__": "x.__ge__(y) <==> x>=y",
+        "__gt__": "x.__gt__(y) <==> x>y",
+        "__ixor__": "x.__ixor__(y) <==> x^=y",
+        "__le__": "x.__le__(y) <==> x<=y",
+        "__lt__": "x.__lt__(y) <==> x<y",
+        "__ne__": " x.__ne__(y) <==> x!=y",
+        "__xor__": "x.__xor__(y) <==> x^y",
+        "isdisjoint": "x.isdisjoint(y) <==> x&y == None",
+        "__ior__": "x.__ior__(y) <==> x|=y",
+        "__iand__": "x.__iand__(y) <==> x&=y",
+        "__isub__": "x.__isub__(y) <==> x-=y",
+    }
     for method in setMethods:
-        a = '''def %s(self, other):
+        code = '''def %s(self, other):
+            "%s"
             typeTest([Models], other)
-            a = self.db.%s(other.db)
-            if not isinstance(a, Models):
-                return a
-            return Models(a)''' % (method, method)
-        exec a in globals(), locals()
+            ret = self.db.copy().%s(other.db.copy())
+            if not isinstance(ret, set):
+                return ret
+            return Models(ret)''' % (method, setMethods[method], method)
+        exec code in globals(), locals()
 
+    setMethods = {
+        "__or__": "x.__or__(y) <==> x|y",
+        "__and__": "x.__and__(y) <==> x&y",
+        "__sub__": "x.__sub__(y) <==> x-y",
+    }
+    for method in setMethods:
+        code = '''def %s(self, *other):
+            "%s"
+            typeTest([Models]*len(other), *other)
+            ret =reduce(lambda x,y: x.%s(y),
+            [self.db.copy()] + [x.db.copy() for x in other])
+            return Models(ret)''' % (method, setMethods[method], method)
+        exec code in globals(), locals()
+    del setMethods, method, code
 
-# def replaceArg(model, oldArg, newArg):
-#     '''docstring for replaceArg'''
+    def move(self, v):
+        '''move model position'''
 
-#     typeTest([myObject, int], model, argIndex)
-#     m = model.__class__.name
-#     args = model.args
-#     return eval(m + "(" + args + ")")
+        typeTest([vector], v)
+        ret = []
+        for m in self:
+            ret.append(m.move(v))
+        return ret
 
-# myFunTest(replaceArg, args, goal="goal")
+    @property
+    def length(self):
+        '''__len__'''
 
-
-# def move(v, models):
-#     '''move model position using vector'''
-
-#     typeTest([vector, myObject], v, model)
-#     if not isinstance(model, Models):
-#         newargs = model.args[:]
-#         for arg in model.args:
-#             if isinstance(arg, point):
-#                 new
+        return self.__len__()
