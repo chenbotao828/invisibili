@@ -17,7 +17,25 @@ from arc import *
 # a=Models({point(4,2)})
 # a.replace(point(4,2), point(1,1))
 # print a
-v1 = vector(1, 1)
-v2 = vector(2, 2)
+# v1 = vector(1, 1)
+# v2 = vector(2, 2)
 
-print v1 * v2
+# print v1 * v2
+
+# a=point(2,3,3)
+
+# print a
+
+# b = lwpolyline(point2d(1,1), point2d(2,2), point2d(3,3))
+
+# print b
+m = Models({point2d(3,3),point2d(1,1)})
+print m
+class ClassName(myObject):
+    '''docstring for ClassName'''
+
+    def __init__(self, arg):
+
+        typeTest([typeList], arg)
+        self.para = tuple("arg".split(", "))
+        self.arg = arg

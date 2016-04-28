@@ -4,10 +4,10 @@ from core import _const, myFunTest, myProTest, typeTest
 
 
 "define const data"
-const = _const()
+c = _const()
 
 "type of numbers"
-Num = const.Num = [int, float, long]
+c.N = [int, float, long]
 '''
 -------------------------------------------------------------------------------
 Models of invisibili
@@ -16,24 +16,38 @@ Models of invisibili
 
 
 class myObject(object):
-    "modified Object"
+    "My Object "
 
-    def __init__(self, *args):
+    def __init__(self):
         pass
-
-    def __repr__(self):
-        if type(self.args) != tuple:
-            return type(self).__name__ + "(" + str(self.args) + ")"
-        return type(self).__name__ + str(self.args)
 
     def __eq__(self, another):
         # sd == ad:
-        if type(self) == type(another) and self.args == another.args:
+        if type(self) == type(another) and self.__dict__ == another.__dict__:
             return True
         return False
 
     def __hash__(self):
         return hash((type(self), self.args))
+
+    @property
+    def args(self):
+        '''args for model'''
+
+        ret = []
+        for p in self.para:
+            if p[0:2] == "**":
+                raise Exception("\"**\" parameter is not allowed")
+            if p[0] == "*":
+                ret += self.__dict__[p.lstrip("*")]
+            else:
+                ret.append(self.__dict__[p])
+        return tuple(ret)
+
+    def __repr__(self):
+        if type(self.args) != tuple:
+            return type(self).__name__ + "(" + str(self.args) + ")"
+        return type(self).__name__ + str(self.args)
 
 
 class point(myObject):
@@ -44,13 +58,14 @@ class point(myObject):
         if len(coords) not in [2, 3]:
             raise Exception("Expect 2 or 3 coords, given %d" % len(coords))
 
-        typeTest([Num] * len(coords), *coords)
-        self.args = (coords)
+        typeTest([c.N] * len(coords), *coords)
         self.x = coords[0]
         self.y = coords[1]
         if len(coords) == 2:
+            self.para = ("x", "y")
             self.__class__ = type(point2d(0, 0))
         else:
+            self.para = ("x", "y", "z")
             self.z = coords[2]
             self.__class__ = type(point3d(0, 0, 0))
 
@@ -75,8 +90,8 @@ class point2d(point):
 
     def __init__(self, x, y):
 
-        typeTest([Num, Num], x, y)
-        self.args = (x, y)
+        typeTest([c.N, c.N], x, y)
+        self.para = ("x", "y")
         self.x = x
         self.y = y
 
@@ -91,8 +106,8 @@ class point3d(point):
 
     def __init__(self, x, y, z):
 
-        typeTest([Num, Num, Num], x, y, z)
-        self.args = (x, y, z)
+        typeTest([c.N, c.N, c.N], x, y, z)
+        self.para = ("x", "y", "z")
         self.x = x
         self.y = y
         self.z = z
@@ -111,13 +126,14 @@ class vector(myObject):
         if len(args) not in [2, 3]:
             raise Exception("Expect 2 or 3 coords, given %d" % len(args))
 
-        typeTest([Num] * len(args), *args)
-        self.args = (args)
+        typeTest([c.N] * len(args), *args)
         self.x = args[0]
         self.y = args[1]
         if len(args) == 2:
+            self.para = ("x", "y")
             self.__class__ = type(vector2d(0, 0))
         else:
+            self.para = ("x", "y", "z")
             self.z = args[2]
             self.__class__ = type(vector3d(0, 0, 0))
 
@@ -173,8 +189,8 @@ class vector2d(vector):
 
     def __init__(self, x, y):
 
-        typeTest([Num, Num], x, y)
-        self.args = (x, y)
+        typeTest([c.N, c.N], x, y)
+        self.para = ("x", "y")
         self.x = x
         self.y = y
 
@@ -184,8 +200,8 @@ class vector3d(vector):
 
     def __init__(self, x, y, z):
 
-        typeTest([Num, Num, Num], x, y, z)
-        self.args = (x, y, z)
+        typeTest([c.N, c.N, c.N], x, y, z)
+        self.para = ("x", "y", "z")
         self.x = x
         self.y = y
         self.z = z
@@ -197,7 +213,7 @@ class line(myObject):
     def __init__(self, p1, p2):
 
         typeTest([point, point], p1, p2)
-        self.args = (p1, p2)
+        self.para = ("p1", "p2")
         self.p1 = p1
         self.p2 = p2
 
@@ -207,15 +223,15 @@ class circle(myObject):
 
     def __init__(self, center, radius):
 
-        typeTest([point, Num], center, radius)
-        self.args = (center, abs(radius))
+        typeTest([point, c.N], center, radius)
+        self.para = ("center", "radius")
         self.center = center
         self.radius = abs(radius)
 
     def offset(self, dis):
         '''outwards if dis > 0'''
 
-        typeTest([Num], dis)
+        typeTest([c.N], dis)
         return circle(self.center, self.radius + dis)
 
 
@@ -224,9 +240,9 @@ class arc(myObject):
 
     def __init__(self, center, radius, start_angle, end_angle):
 
-        typeTest([point, Num, Num, Num],
+        typeTest([point, c.N, c.N, c.N],
                  center, radius, start_angle, end_angle)
-        self.args = (center, abs(radius), start_angle, end_angle)
+        self.para = ("center", "radius", "start_angle", "end_angle")
         self.center = center
         self.radius = abs(radius)
         self.start_angle = start_angle
@@ -239,7 +255,7 @@ class lwpolyline(myObject):
     def __init__(self, *points):
 
         typeTest([point2d] * len(points), *points)
-        self.args = (points)
+        self.para = ("*points",)
         self.points = points
 
 
@@ -249,10 +265,10 @@ class ellipse(myObject):
     def __init__(self, center, major_axis, ratio, start_param=0,
                  end_param=6.283185307):
 
-        typeTest([point, Num, Num, Num], center,
+        typeTest([point, c.N, c.N, c.N], center,
                  major_axis, ratio, start_param, end_param)
-        self.args = (center, abs(major_axis), abs(ratio),
-                     start_param, end_param)
+        self.para = ("center", "major_axis", "ratio",
+                     "start_param", "end_param")
         self.center = center
         self.major_axis = abs(major_axis)
         self.ratio = abs(ratio)
@@ -266,7 +282,7 @@ class text(myObject):
     def __init__(self, text):
 
         typeTest([str], text)
-        self.args = (text)
+        self.para = ("text",)
         self.text = text
 
 
@@ -276,7 +292,7 @@ class polyline2d(myObject):
     def __init__(self, *points):
 
         typeTest([point2d] * len(points), *points)
-        self.args = (points)
+        self.para = ("*points",)
         self.points = points
 
 
@@ -286,7 +302,7 @@ class polyline3d(myObject):
     def __init__(self, *points):
 
         typeTest([point3d] * len(points), *points)
-        self.args = (points)
+        self.para = ("*points",)
         self.points = points
 
 
@@ -296,17 +312,17 @@ class mtext(myObject):
     def __init__(self, text):
 
         typeTest([str], text)
-        self.args = (text)
+        self.para = ("text",)
         self.text = text
 
 
 class Models(myObject):
     '''model collection like set'''
 
-    def __init__(self, s=set()):
+    def __init__(self, db=set()):
 
-        self.db = s
-        self.args = (self.db,)
+        self.db = db
+        self.para = ("db",)
 
     def add(self, *model):
         '''add one or more model'''
@@ -379,13 +395,24 @@ class Models(myObject):
             return Models(a)''' % (method, method)
         exec a in globals(), locals()
 
-def move(v, models):
-    '''move model position using vector'''
 
-    typeTest([vector, myObject], v, model)
-    if isinstance(model, Models):
-        for m in model:
-            move(v, m)
-    
+# def replaceArg(model, oldArg, newArg):
+#     '''docstring for replaceArg'''
 
-myFunTest(move, args, goal="goal")
+#     typeTest([myObject, int], model, argIndex)
+#     m = model.__class__.name
+#     args = model.args
+#     return eval(m + "(" + args + ")")
+
+# myFunTest(replaceArg, args, goal="goal")
+
+
+# def move(v, models):
+#     '''move model position using vector'''
+
+#     typeTest([vector, myObject], v, model)
+#     if not isinstance(model, Models):
+#         newargs = model.args[:]
+#         for arg in model.args:
+#             if isinstance(arg, point):
+#                 new
