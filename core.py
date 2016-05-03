@@ -1,10 +1,96 @@
 # coding=utf-8
-
 '''
 -------------------------------------------------------------------------------
 Const data of invisibili
 -------------------------------------------------------------------------------
 '''
+
+
+class myObject(object):
+    "My Object "
+
+    def __init__(self):
+        pass
+
+    def __eq__(self, another):
+        # sd == ad:
+        if type(self) == type(another) and self.__dict__ == another.__dict__:
+            return True
+        return False
+
+    def __hash__(self):
+        return hash((type(self), self.args))
+
+    @property
+    def args(self):
+        '''args for model'''
+
+        ret = []
+        for p in self.para:
+            if p[0:2] == "**":
+                raise Exception("\"**\" parameter is not allowed")
+            if p[0] == "*":
+                ret += self.__dict__[p.lstrip("*")]
+            else:
+                ret.append(self.__dict__[p])
+        return tuple(ret)
+
+    def __repr__(self):
+        if type(self.args) != tuple:
+            return type(self).__name__ + "(" + str(self.args) + ")"
+        return type(self).__name__ + str(self.args)
+
+    def move(self, v):
+        '''move along vector'''
+
+        typeTest([vector], v)
+        ret = self
+        for apara in self.para:
+            if isinstance(self.__dict__[apara], point):
+                ret.__dict__[apara] = self.__dict__[apara].move(v)
+        return ret
+
+    @property
+    def sympy_name(self):
+        '''return model's sympy model name if exist (str)'''
+
+        ret = self.__class__.__name__.title()
+        try:
+            eval(ret)
+        except:
+            raise TypeError("%s don't have sympy_name" %
+                            self.__class__.__name__)
+        return ret
+
+    @property
+    def sympy(self):
+        '''return sympy object'''
+
+        return eval(self.sympy_name + str(self.args).title())
+
+    def copy(self):
+        '''return shallow copy'''
+
+        return eval(self.__class__.__name__ + str(tuple(self.args)))
+
+    def set_attr(self, **new):
+        '''return model of new attributes'''
+
+        new_args = list(self.args)
+        for key in new:
+            new_args[self.para.index(key)] = new[key]
+        return eval(fun(self.__class__, new_args))
+
+    # def intersection(self, another):
+    #     '''return intersection list'''
+
+    #     typeTest([myObject], another)
+    #     try:
+    #         A = eval(self.sympy_name + str(self.args).title())
+    #         B = eval(another.sympy_name + str(another.args).title())
+    #         return map(lambda x: eval(x.__repr__().lower()), A.intersection(B))
+    #     except:
+    #         raise TypeError("Can not intersect")
 
 
 class _const(object):
@@ -79,6 +165,26 @@ def myProTest(pro, goal):
         raise Warning(
             "\nProperty Error (Run time: %s):\nRESULT: %s\nGOAL: %s" % (
                 endTime - startTime, ret, goal))
+
+
+def fun(fun, args):
+    '''return str of a function/type/instancemethod with iterable sequence as args'''
+
+    if not hasattr(fun, '__call__'):
+        error = "1st parameter expect a function/type/instancemethod(" \
+            + type(fun).__name__ + " given)"
+        raise TypeError(error)
+    try:
+        argsTuple = tuple(args)
+    except:
+        argsTuple = (args,)
+    return fun.__name__ + str(argsTuple)
+
+
+def sympy2m(sympy_model):
+    '''sympy object to myObject str'''
+
+    return sympy_model.__repr__().lower()
 
 
 class TailRecurseException:
