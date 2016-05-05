@@ -41,7 +41,7 @@ class mPoint(myObject):
 
     def __init__(self, x, y):
 
-        typeTest([const.Num] * 2, x, y)
+        typeTest([Num.constum] * 2, x, y)
         self.args = (x, y)
         self.x = x
         self.y = y
@@ -94,7 +94,7 @@ class linearEquation(myObject):
 
     def __init__(self, a, b, xSpan):
 
-        typeTest([const.Num, const.Num, mSpan], a, b, xSpan)
+        typeTest([Num.constum, Num.constum, mSpan], a, b, xSpan)
         self.args = (a, b, xSpan)
         self.a = a
         self.b = b
@@ -106,7 +106,7 @@ class vtclinearEquation(myObject):
 
     def __init__(self, c, ySpan):
 
-        typeTest([const.Num, mSpan], c, ySpan)
+        typeTest([Num.constum, mSpan], c, ySpan)
         self.args = (c, ySpan)
         self.c = c
         self.ySpan = ySpan
@@ -117,7 +117,7 @@ class mSpan(myObject):
 
     def __init__(self, a, b):
 
-        typeTest([const.Num] * 2, a, b)
+        typeTest([Num.constum] * 2, a, b)
         if a > b:
             a, b = b, a
         self.args = (a, b)
@@ -150,7 +150,7 @@ class mJonitPoint(mPoint):
 
     def __init__(self, x, y, aSwallSet):
 
-        typeTest([const.Num, const.Num, mSwallset], x, y, aSwallSet)
+        typeTest([Num.constum, Num.constum, mSwallset], x, y, aSwallSet)
         self.args = (x, y, aSwallSet)
         self.x = x
         self.y = y
@@ -188,7 +188,7 @@ class _const(object):
 const = _const()
 
 "type of numbers"
-const.Num = [int, float, long]
+Num.constum = [int, float, long]
 
 '''
 -------------------------------------------------------------------------------
@@ -336,7 +336,7 @@ def isIntersectSpan(span1, span2):
 def numInSpan(num, aSpan):
     '''return True if a num is in a range '''
 
-    typeTest([const.Num, mSpan], num, aSpan)
+    typeTest([Num.constum, mSpan], num, aSpan)
     if aSpan.a <= num <= aSpan.b:
         return True
     return False
@@ -428,7 +428,7 @@ def jointSeg(seg1, seg2):
 def linearEquationY(linearEq, x):
     '''given linear equation and X return Y or Y span'''
 
-    typeTest([[linearEquation, vtclinearEquation], const.Num], linearEq, x)
+    typeTest([[linearEquation, vtclinearEquation], Num.constum], linearEq, x)
     if type(linearEq) == vtclinearEquation:
         if x == linearEq.c:
             return linearEq.ySpan

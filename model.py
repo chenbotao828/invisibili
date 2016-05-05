@@ -1,19 +1,97 @@
 # coding=utf-8
 from __future__ import division
-from core import _const, myObject, fun, typeTest, sympy2m
+from core import _const, fun, typeTest, sympy2m
 from sympy import *
 import math
+import ezdxf
 
 "define const data"
-const = _const()
+Num = _const()
 
 "type of numbers"
-const.N = [int, float, long]
+Num.const = [int, float, long]
 '''
 -------------------------------------------------------------------------------
 Models of invisibili
 -------------------------------------------------------------------------------
 '''
+
+
+class myObject(object):
+    "My Object "
+
+    def __init__(self):
+        pass
+
+    def __eq__(self, another):
+        # sd == ad:
+        if type(self) == type(another) and self.__dict__ == another.__dict__:
+            return True
+        return False
+
+    def __hash__(self):
+        return hash((type(self), self.args))
+
+    @property
+    def args(self):
+        '''args for model'''
+
+        ret = []
+        for p in self.para:
+            if p[0:2] == "**":
+                raise Exception("\"**\" parameter is not allowed")
+            if p[0] == "*":
+                ret += self.__dict__[p.lstrip("*")]
+            else:
+                ret.append(self.__dict__[p])
+        return tuple(ret)
+
+    def __repr__(self):
+        if type(self.args) != tuple:
+            return type(self).__name__ + "(" + str(self.args) + ")"
+        return type(self).__name__ + str(self.args)
+
+    def move(self, v):
+        '''move along vector'''
+
+        typeTest([vector], v)
+        ret = self
+        for apara in self.para:
+            if isinstance(self.__dict__[apara], point):
+                ret.__dict__[apara] = self.__dict__[apara].move(v)
+        return ret
+
+    @property
+    def sympy_name(self):
+        '''return model's sympy model name if exist (str)'''
+
+        ret = self.__class__.__name__.title()
+        try:
+            eval(ret)
+        except:
+            raise TypeError("%s don't have sympy_name" %
+                            self.__class__.__name__)
+        return ret
+
+    @property
+    def sympy(self):
+        '''return sympy object'''
+
+        return eval(self.sympy_name + str(self.args).title())
+
+    def deepcopy(self):
+        '''return deep copy'''
+
+        import copy
+        return copy.deepcopy(self)
+
+    def with_attr(self, **new):
+        '''return model of new attributes'''
+
+        ret = self.deepcopy()
+        for key in new:
+            ret.__setattr__(key, new[key])
+        return ret
 
 
 class point(myObject):
@@ -24,7 +102,7 @@ class point(myObject):
         if len(coords) not in [2, 3]:
             raise Exception("Expect 2 or 3 coords, given %d" % len(coords))
 
-        typeTest([const.N] * len(coords), *coords)
+        typeTest([Num.const] * len(coords), *coords)
         self.x = coords[0]
         self.y = coords[1]
         if len(coords) == 2:
@@ -56,7 +134,7 @@ class point2d(point):
 
     def __init__(self, x, y):
         point.__init__
-        typeTest([const.N, const.N], x, y)
+        typeTest([Num.const, Num.const], x, y)
         self.para = ("x", "y")
         self.x = x
         self.y = y
@@ -72,7 +150,7 @@ class point3d(point):
 
     def __init__(self, x, y, z):
 
-        typeTest([const.N, const.N, const.N], x, y, z)
+        typeTest([Num.const, Num.const, Num.const], x, y, z)
         self.para = ("x", "y", "z")
         self.x = x
         self.y = y
@@ -99,7 +177,7 @@ class vector(myObject):
         if len(args) not in [2, 3]:
             raise Exception("Expect 2 or 3 args, given %d" % len(args))
 
-        typeTest([const.N] * len(args), *args)
+        typeTest([Num.const] * len(args), *args)
 
         self.x = args[0]
         self.y = args[1]
@@ -125,7 +203,7 @@ class vector(myObject):
 
     def __mul__(self, another):
 
-        typeTest([const.N + [self.__class__]], another)
+        typeTest([Num.const + [self.__class__]], another)
         if self.__class__ == another.__class__:
             return sum(map(lambda x, y: x * y, self.args, another.args))
         else:
@@ -183,7 +261,7 @@ class vector2d(vector):
 
     def __init__(self, x, y):
 
-        typeTest([const.N, const.N], x, y)
+        typeTest([Num.const, Num.const], x, y)
         self.para = ("x", "y")
         self.x = x
         self.y = y
@@ -194,7 +272,7 @@ class vector3d(vector):
 
     def __init__(self, x, y, z):
 
-        typeTest([const.N, const.N, const.N], x, y, z)
+        typeTest([Num.const, Num.const, Num.const], x, y, z)
         self.para = ("x", "y", "z")
         self.x = x
         self.y = y
@@ -215,7 +293,7 @@ class line(myObject):
         '''return a parallel of a line, the direction vector is
         clw compare with the vector(p1, p2) if dis > 0'''
 
-        typeTest([const.N], dis)
+        typeTest([Num.const], dis)
 
         v = vector(self.p2.x - self.p1.x,
                    self.p2.y - self.p1.y).clw().unit * dis
@@ -272,13 +350,37 @@ class line(myObject):
             return line(pl[0], pl[-1])
         raise ValueError("Expect overlapped lines")
 
+    def is_intersect(self, another):
+        '''return True if is intersect'''
+
+        typeTest([line], another)
+        il = self.sympy.intersection(another.sympy)
+        if il != [] and isinstance(il[0], Point):
+            return True
+        return False
+
+    def is_overlapped(self, another):
+        '''return True if is overlapped'''
+
+        typeTest([line], another)
+        il = self.sympy.intersection(another.sympy)
+        if il != [] and isinstance(il[0], Segment):
+            return True
+        return False
+
+    def draw(self, msp, dxfattribs=None):
+        '''draw in ezdxf'''
+
+        typeTest([ezdxf.modern.layouts.Layout], msp)
+        return msp.add_line(self.p1.args, self.p2.args, dxfattribs)
+
 
 class circle(myObject):
     '''2D circle'''
 
     def __init__(self, center, radius):
 
-        typeTest([point, const.N], center, radius)
+        typeTest([point, Num.const], center, radius)
         self.para = ("center", "radius")
         self.center = center
         self.radius = abs(radius)
@@ -286,9 +388,15 @@ class circle(myObject):
     def offset(self, dis):
         '''outwards if dis > 0'''
 
-        typeTest([const.N], dis)
+        typeTest([Num.const], dis)
         assert self.radius + dis >= 0
         return circle(self.center, self.radius + dis)
+
+    def draw(self, msp, dxfattribs=None):
+        '''draw in ezdxf'''
+
+        typeTest([ezdxf.modern.layouts.Layout], msp)
+        return msp.add_circle(self.center.args, self.radius, dxfattribs)
 
 
 class arc(myObject):
@@ -296,7 +404,7 @@ class arc(myObject):
 
     def __init__(self, center, radius, start_angle, end_angle):
 
-        typeTest([point, const.N, const.N, const.N],
+        typeTest([point, Num.const, Num.const, Num.const],
                  center, radius, start_angle, end_angle)
         self.para = ("center", "radius", "start_angle", "end_angle")
         self.center = center
@@ -307,10 +415,17 @@ class arc(myObject):
     def offset(self, dis):
         '''outwards if dis > 0'''
 
-        typeTest([const.N], dis)
+        typeTest([Num.const], dis)
         assert self.radius + dis >= 0
         return arc(self.center, self.radius + dis,
                    self.start_angle, self.end_angle)
+
+    def draw(self, msp, dxfattribs=None):
+        '''draw in ezdxf'''
+
+        typeTest([ezdxf.modern.layouts.Layout], msp)
+        return msp.add_circle(self.center.args, self.radius,
+                              start_angle, end_angle, dxfattribs)
 
 
 class lwpolyline(myObject):
@@ -323,40 +438,35 @@ class lwpolyline(myObject):
         self.points = points
         assert len(self.args) >= 2
 
+    def offset(self, dis):
+        '''Offset lwpolyline like line'''
 
-def Function(Parameters):
-    '''docstring for Function'''
+        def new_p(p, dis, pre_p, post_p):
+            if vector(pre_p, p).slope == vector(p, post_p).slope:
+                return p.move(vector(pre_p, p).clw().unit * dis)
+            else:
+                pre_l = line(pre_p, p).offset(dis)
+                post_l = line(p, post_p).offset(dis)
+                if post_l.length == 0:
+                    ret = p.move(vector(pre_p, p).clw().unit * dis)
+                if pre_l.length == 0:
+                    ret = p.move(vector(p, post_p).clw().unit * dis)
+                else:
+                    ret = eval(
+                        sympy2m(pre_l.Line.intersection(post_l.Line)[0]))
+                return ret
 
-    typeTest([typeList], Parameters)
-    pass
-    # def offset(self, dis):
-    #     '''Offset lwpolyline like line'''
+        new_start = self.args[0].move(
+            vector(self.args[0], self.args[1]).clw().unit * dis)
+        new_end = self.args[-1].move(
+            vector(self.args[-2], self.args[-1]).clw().unit * dis)
+        new_arg = [new_start]
+        new_arg += map(lambda i: new_p(self.args[i], dis, self.args[i - 1],
+                                       self.args[i + 1]),
+                       range(1, len(self.args) - 1))
+        new_arg += [new_end]
 
-    #     def new_p(p, dis, pre_p, post_p):
-    #         if vector(pre_p, p).slope == vector(p, post_p).slope:
-    #             return p.move(vector(pre_p, p).clw().unit * dis)
-    #         else:
-    #             pre_l = line(pre_p, p).offset(dis)
-    #             post_l = line(p, post_p).offset(dis)
-    #             if post_l.length == 0:
-    #                 ret = p.move(vector(pre_p, p).clw().unit * dis)
-    #             if pre_l.length == 0:
-    #                 ret = p.move(vector(p, post_p).clw().unit * dis)
-    #             else:
-    #                 ret = eval(sympy2m(pre_l.Line.intersection(post_l.Line)[0]))
-    #             return ret
-
-    #     new_start = self.args[0].move(
-    #         vector(self.args[0], self.args[1]).clw().unit * dis)
-    #     new_end = self.args[-1].move(
-    #         vector(self.args[-2], self.args[-1]).clw().unit * dis)
-    #     new_arg = [new_start]
-    #     new_arg += map(lambda i: new_p(self.args[i], dis, self.args[i - 1],
-    #                                    self.args[i + 1]),
-    #                    range(1, len(self.args) - 1))
-    #     new_arg += [new_end]
-
-    #     return eval(fun(lwpolyline, new_arg))
+        return eval(fun(lwpolyline, new_arg))
 
     @property
     def sympy(self):
@@ -382,6 +492,12 @@ def Function(Parameters):
                 ret += i.intersection(another.sympy)
         return Models(map(lambda x: eval(sympy2m(x)), list(set(ret))))
 
+    def draw(self, msp, dxfattribs=None):
+        '''draw in ezdxf'''
+
+        typeTest([ezdxf.modern.layouts.Layout], msp)
+        return msp.add_lwpolyline([x.args for x in self.args], dxfattribs)
+
 
 class ellipse(myObject):
     '''ellipse'''
@@ -389,7 +505,7 @@ class ellipse(myObject):
     def __init__(self, center, major_axis, ratio, start_param=0,
                  end_param=math.pi * 2):
 
-        typeTest([point, const.N, const.N, const.N], center,
+        typeTest([point, Num.const, Num.const, Num.const], center,
                  major_axis, ratio, start_param, end_param)
         self.para = ("center", "major_axis", "ratio",
                      "start_param", "end_param")
@@ -398,6 +514,13 @@ class ellipse(myObject):
         self.ratio = abs(ratio)
         self.start_param = start_param
         self.end_param = end_param
+
+    def draw(self, msp, dxfattribs=None):
+        '''draw in ezdxf'''
+
+        typeTest([ezdxf.modern.layouts.Layout], msp)
+        return msp.add_ellipse(self.center, self.major_axis, self.ratio,
+                               self.start_param, self.end_param, dxfattribs)
 
 
 class text(myObject):
@@ -409,6 +532,12 @@ class text(myObject):
         self.para = ("text",)
         self.text = text
 
+    def draw(self, msp, dxfattribs=None):
+        '''draw in ezdxf'''
+
+        typeTest([ezdxf.modern.layouts.Layout], msp)
+        return msp.add_text(self.text, dxfattribs)
+
 
 class polyline2d(myObject):
     '''polyline2d'''
@@ -419,6 +548,11 @@ class polyline2d(myObject):
         self.para = ("*points",)
         self.points = points
 
+    def draw(self, msp, dxfattribs=None):
+        '''draw in ezdxf'''
+
+        typeTest([ezdxf.modern.layouts.Layout], msp)
+        return msp.add_polyline2d([x.args for x in self.args], dxfattribs)
 
 class polyline3d(myObject):
     '''polyline3d'''
@@ -429,6 +563,12 @@ class polyline3d(myObject):
         self.para = ("*points",)
         self.points = points
 
+    def draw(self, msp, dxfattribs=None):
+        '''draw in ezdxf'''
+
+        typeTest([ezdxf.modern.layouts.Layout], msp)
+        return msp.add_polyline3d([x.args for x in self.args], dxfattribs)
+
 
 class mtext(myObject):
     '''mtext'''
@@ -438,6 +578,12 @@ class mtext(myObject):
         typeTest([str], text)
         self.para = ("text",)
         self.text = text
+
+    def draw(self, msp, dxfattribs=None):
+        '''draw in ezdxf'''
+
+        typeTest([ezdxf.modern.layouts.Layout], msp)
+        return msp.add_mtext(self.text, dxfattribs)
 
 
 class Models(set):
@@ -458,3 +604,22 @@ class Models(set):
         for m in self:
             ret.add(m.move(v))
         return ret
+
+    def merge_walls(self):
+        '''merge_walls'''
+
+        from arc import wall
+        walls = filter(lambda x: isinstance(x, wall), self)
+        if len(walls) < 2:
+            return self
+        ret = walls[0].merge(walls[1])
+        for i in range(2, len(walls)):
+            for w in ret:
+                ret.remove(w)
+                ret += walls[i].merge(w)
+        return (self - Models(walls)) | Models(ret)
+
+    def outlines(self):
+        '''return ezdxf object str list'''
+
+        merged = self.merge_walls()

@@ -7,9 +7,9 @@ msp = dwg.modelspace()
 
 points = [(0, 0,), (3, 0, .1, .2, 1.5), (6, 0, .1, .05), (9, 0)]
 msp.add_lwpolyline(points)
-msp.add_arc((0,0),10,30,90)
-
-print dwg.entitydb._database
+msp.add_arc((0, 0), 10, 30, 90)
+print isinstance(msp, ezdxf.modern.layouts.Layout)
+# print dwg.entitydb._database
 
 # ezdxf.drawing.modelspace().foo=foo
 # from ezdxf import *
